@@ -1,32 +1,21 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-# load_dotenv()
-
-# DB_URL = (
-#     f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-#     f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-# )
-
-# engine = create_engine(DB_URL, pool_pre_ping=True)
-# SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-# Base = declarative_base()
-
-# SQLite database file (will be created automatically)
-DB_URL = "sqlite:///./test.db"
+# This is the one line that changes when we switch to MySQL later.
+# SQLite just needs a file path. The file gets created automatically.
+DATABASE_URL = "sqlite:///./taskapi.db"
 
 engine = create_engine(
-    DB_URL,
-    echo=True,  # shows SQL in terminal (great for learning)
-    connect_args={"check_same_thread": False}  # needed for SQLite + FastAPI
+    DATABASE_URL,
+    connect_args={"check_same_thread": False}  # SQLite-specific setting, not needed for MySQL
 )
 
-SessionLocal = sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False
-)
+# A SessionLocal is a "factory" for database sessions
+# Each request gets its own session — its own conversation with the database
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+# Base class that all our database models will inherit from
+class Base(DeclarativeBase):
+    pass
+
+# Base = declarative_base()

@@ -1,26 +1,22 @@
-from pydantic import BaseModel
-from typing import Optional
-from datetime import date
-from enum import Enum
+from sqlalchemy import Column, Integer, String, Date, Enum as SQLEnum
+from app.database import Base
+import enum
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(str, enum.Enum):
     pending = "pending"
     completed = "completed"
 
 
-class TaskCreate(BaseModel):
-    """The shape of data we EXPECT when someone creates a task."""
-    title: str
-    description: Optional[str] = None
-    due_date: Optional[date] = None
-    status: TaskStatus = TaskStatus.pending
+class Task(Base):
+    """
+    This class maps directly to a 'tasks' table in the database.
+    Each attribute = a column.
+    """
+    __tablename__ = "tasks"
 
-
-class TaskResponse(BaseModel):
-    """The shape of data we SEND BACK in responses."""
-    id: int
-    title: str
-    description: Optional[str] = None
-    due_date: Optional[date] = None
-    status: TaskStatus
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(String(1000), nullable=True)
+    due_date = Column(Date, nullable=True)
+    status = Column(SQLEnum(TaskStatus), default=TaskStatus.pending)

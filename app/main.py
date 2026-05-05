@@ -1,11 +1,12 @@
 from fastapi import FastAPI
-from routers import tasks
+from app.database import engine, Base
+from app.routers import tasks
+
+# Creates all tables that don't exist yet — safe to run every time
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Task Management API")
-
-# "Include" the tasks router — plugs all its routes into the app
 app.include_router(tasks.router)
-
 
 @app.get("/", tags=["health"])
 def root():

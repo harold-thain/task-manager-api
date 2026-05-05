@@ -1,69 +1,62 @@
-from fastapi import APIRouter, HTTPException
-from models import TaskCreate, TaskResponse
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.database import SessionLocal
+from app import models, schemas
 
-router = APIRouter(
-    prefix="/tasks",   # every route in here starts with /tasks
-    tags=["tasks"],    # groups them nicely in /docs
-)
-
-# --- In-memory "database" ---
-# A simple list acting as our data store for now.
-# Each item will be a dict. We track IDs with a counter.
-tasks_db: list[dict] = []
-next_id: int = 1
+router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/", response_model=TaskResponse, status_code=201)
-def create_task(task: TaskCreate):
+# --- Dependency: how each route gets a database session ---
+def get_db():
     """
-    Create a new task.
-    Status 201 = "Created" (more specific than 200 for creation).
+    Opens a session, hands it to the route, then closes it when done.
+    The 'try/finally' ensures the session ALWAYS closes, even if an error occurs.
     """
-    global next_id
-    new_task = {
-        "id": next_id,
-        **task.model_dump()   # unpacks all fields from the Pydantic model into the dict
-    }
-    tasks_db.append(new_task)
-    next_id += 1
-    return new_task
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-@router.get("/", response_model=list[TaskResponse])
-def get_all_tasks():
-    """Return every task. Later, this will be filtered by logged-in user."""
-    return tasks_db
+@router.post("/", response_model=schemas.TaskResponse, status_code=201)
+def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
+    db_task = models.Task(**task.model_dump())
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)  # reloads the object from DB so we get the generated ID
+    return db_task
 
 
-@router.get("/{task_id}", response_model=TaskResponse)
-def get_task(task_id: int):
-    """Get a single task by ID. 404 if it doesn't exist."""
-    for task in tasks_db:
-        if task["id"] == task_id:
-            return task
-    raise HTTPException(status_code=404, detail="Task not found")
+@router.get("/", response_model=list[schemas.TaskResponse])
+def get_all_tasks(db: Session = Depends(get_db)):
+    return db.query(models.Task).all()
 
 
-@router.put("/{task_id}", response_model=TaskResponse)
-def update_task(task_id: int, updated: TaskCreate):
-    """
-    Replace a task's data entirely.
-    We find it, overwrite its fields, keep the same ID.
-    """
-    for index, task in enumerate(tasks_db):
-        if task["id"] == task_id:
-            tasks_db[index] = {"id": task_id, **updated.model_dump()}
-            return tasks_db[index]
-    raise HTTPException(status_code=404, detail="Task not found")
+@router.get("/{task_id}", response_model=schemas.TaskResponse)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.put("/{task_id}", response_model=schemas.TaskResponse)
+def update_task(task_id: int, updated: schemas.TaskCreate, db: Session = Depends(get_db)):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    for key, value in updated.model_dump().items():
+        setattr(task, key, value)
+    db.commit()
+    db.refresh(task)
+    return task
 
 
 @router.delete("/{task_id}", status_code=204)
-def delete_task(task_id: int):
-    """
-    Delete a task. Status 204 = "No Content" — success, but nothing to return.
-    """
-    for index, task in enumerate(tasks_db):
-        if task["id"] == task_id:
-            tasks_db.pop(index)
-            return
-    raise HTTPException(status_code=404, detail="Task not found")
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db.delete(task)
+    db.commit()
