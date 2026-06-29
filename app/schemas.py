@@ -21,12 +21,11 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
-        
-        
-# --- Task Schemas ---
+
+
+# --- Task Schemas (unchanged) ---
 
 class TaskCreate(BaseModel):
-    """What we expect the client to send when creating/updating a task."""
     title: str
     description: Optional[str] = None
     due_date: Optional[date] = None
@@ -34,7 +33,6 @@ class TaskCreate(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    """What we send back in responses."""
     id: int
     title: str
     description: Optional[str] = None
@@ -42,4 +40,4 @@ class TaskResponse(BaseModel):
     status: TaskStatus
 
     class Config:
-        from_attributes = True  # lets Pydantic read SQLAlchemy objects directly
+        from_attributes = True
