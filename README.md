@@ -32,10 +32,24 @@ A secure backend service that allows users to create accounts and manage their o
 ## How to Run Locally
 
 Create a virtual environment:
-
 ```
 python -m venv venv
 source venv/bin/activate
+```
+
+Install the required packages:
+```
+pip install -r requirements.txt
+```
+
+Run the web sever
+```
+uvicorn app.main:app --reload
+```
+
+Navigate to the auto-generated documentation 
+```
+http://127.0.0.1:8000/docs
 ```
 
 ## API Endpoints Summary
