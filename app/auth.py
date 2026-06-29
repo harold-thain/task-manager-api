@@ -6,12 +6,14 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app import models
+import os
+
 
 # --- Config ---
 # In a real app these would live in environment variables, not the code
-SECRET_KEY = "coffeeplease"               # used to sign tokens — keep this secret
-ALGORITHM = "HS256"                 # signing algorithm
-ACCESS_TOKEN_EXPIRE_MINUTES = 30    # tokens expire after 30 minutes
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback-only-for-dev")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 
 # --- Password hashing ---

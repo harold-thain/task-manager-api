@@ -21,11 +21,13 @@ def create_task(
 
 @router.get("/", response_model=list[schemas.TaskResponse])
 def get_all_tasks(
+    skip: int = 0,          # pagination: records to skip 
+    limit: int = 10,        # pagination: max records to return
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     # Filter by owner_id — users only see their own tasks
-    return db.query(models.Task).filter(models.Task.owner_id == current_user.id).all()
+    return db.query(models.Task).filter(models.Task.owner_id == current_user.id).offset(skip).limit(limit).all()
 
 
 @router.get("/{task_id}", response_model=schemas.TaskResponse)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import date
 from app.models import TaskStatus
@@ -8,9 +8,9 @@ from app.models import TaskStatus
 
 class UserCreate(BaseModel):
     """What we expect when someone registers."""
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     email: EmailStr   # Pydantic validates this is a real email format
-    password: str
+    password: str = Field(min_length=8, max_length=100)
 
 
 class UserResponse(BaseModel):
@@ -26,8 +26,8 @@ class UserResponse(BaseModel):
 # --- Task Schemas (unchanged) ---
 
 class TaskCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
+    title: str = Field(min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=1000)
     due_date: Optional[date] = None
     status: TaskStatus = TaskStatus.pending
 
